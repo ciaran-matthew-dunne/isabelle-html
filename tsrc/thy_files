@@ -1,0 +1,5 @@
+# This list of theory files is used by various scripts in the building/linking process.
+"GZF_locale.thy
+ Ord_locale.thy
+ Model_locale.thy
+ Connection_locale.thy"

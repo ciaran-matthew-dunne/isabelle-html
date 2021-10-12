@@ -1,0 +1,26 @@
+session "GZF-HOL" in "." =  "HOL" +
+  description "
+    Work in progress implementation of GSTs in Isabelle
+
+    We begin to formalise 'Generalised Set Theory' in Isabelle/HOL,
+    by first providing a definition of Generalised Zermelo-Fraenkel as a locale.
+    GZF is an abstract specification of set theory, which must hold in any domain type.
+    
+    The GZF locale specifies assumptions for constants, and definitions and theorems
+    which depend on them.      
+  "  
+  options [timeout=206 
+    (* TODO: latex pdf output
+        document = pdf, document_output = "output", 
+        document_variants = "document:outline=/proof,/ML"
+    *) ]
+  theories
+    "GZF_locale"
+    "Ord_locale"
+    "Model_locale"
+    "Connection_locale"
+ (* document_files
+    "root.tex"
+    "root.bib"
+    "root.bst"
+  *)

@@ -33,33 +33,37 @@ locale Ord = GZF Mem Emp Set Union Subset Pow Succ Inf Repl
     (*Axioms for the Ord predicate*)
     zero_ord [simp]: "Ord 0" and
     \<omega>_ord [simp]: "Ord \<omega>" and
-    lt_ord : "i < j \<longrightarrow> Ord i \<and> Ord j" and
-    ord_succ_iff [iff] : "Ord (succ i) \<longleftrightarrow> Ord i" and
+    lt_ord_ax : "\<forall>\<alpha> \<beta>. \<alpha> < \<beta> \<longrightarrow> Ord \<alpha> \<and> Ord \<beta>" and
+    ord_succ_iff_ax : "\<forall>\<beta>. Ord (succ \<beta>) \<longleftrightarrow> Ord \<beta>" and
     (*Definition of 0, succ, leq and Limit*)
-    zero_def : "\<not> (i < 0)" and
-    succ_def : "(\<forall>\<beta>. Ord \<beta> \<longrightarrow> (\<forall>\<alpha>. \<alpha> < (succ \<beta>) \<longleftrightarrow> \<alpha> = \<beta> \<or> \<alpha> < \<beta>))" and
-    limit_def : "Limit \<mu> \<longleftrightarrow> (Ord \<mu> \<and> 0 < \<mu> \<and> (\<forall>\<beta>. \<beta> < \<mu> \<longrightarrow> succ \<beta> < \<mu>)) " and
+    zero_def : "\<forall>\<alpha>. \<not> (\<alpha> < 0)" and
+    succ_def : "(\<forall>\<alpha> \<beta>. \<alpha> < (succ \<beta>) \<longleftrightarrow> \<alpha> < \<beta> | \<alpha> = \<beta> \<and> Ord \<beta>)" and
+    limit_def : "\<forall>\<mu>. Limit \<mu> \<longleftrightarrow> (Ord \<mu> \<and> 0 < \<mu> \<and> (\<forall>\<beta>. \<beta> < \<mu> \<longrightarrow> succ \<beta> < \<mu>))" and
+    \<omega>_def : "Limit \<omega> \<and> (\<forall>\<mu>. Limit \<mu> \<longrightarrow> \<omega> < \<mu>)" and
     (*Characterisation of < as a wellorder*)
     lt_trans : "\<forall>i j k. i < j \<longrightarrow> j < k \<longrightarrow> i < k" and
     lt_notsym : "\<forall>i j. i < j \<longrightarrow> \<not> j < i" and
     lt_linear : "\<forall>i j. Ord i \<and> Ord j \<longrightarrow> i < j | i = j | j < i" and
-    lt_induct : "Ord a \<longrightarrow> (\<forall>x. Ord x \<longrightarrow> (\<forall>y. y < x \<longrightarrow> P y) \<longrightarrow> P x) \<longrightarrow> P a" and
+    lt_induct : "\<forall>a. Ord a \<longrightarrow> (\<forall>x. Ord x \<longrightarrow> (\<forall>y. y < x \<longrightarrow> P y) \<longrightarrow> P x) \<longrightarrow> P a" and
 
     predset_def : "\<forall>\<beta>. Ord \<beta> \<longrightarrow> Set (predSet \<beta>) \<and> (\<forall>\<alpha>. \<alpha> \<in> predSet \<beta> \<longleftrightarrow> \<alpha> < \<beta>)" and
     ordrec_0 : "\<forall>G F A. OrdRec G F A 0 = A" and 
-    ordrec_succ : "\<forall>G F A b. Ord b \<longrightarrow> 
+    ordrec_succ : "\<forall>G F A b.  
       OrdRec G F A (succ b) = F (succ b) (OrdRec G F A b)" and
     ordrec_lim :  "\<forall>G F A z. Limit z \<longrightarrow> 
       OrdRec G F A z = G z (Lambda (predSet z) (\<lambda>\<beta>. OrdRec G F A \<beta>))" 
 
 context Ord begin 
 
+lemma lt_ord : "\<alpha> < \<beta> \<Longrightarrow> Ord \<alpha> \<and> Ord \<beta>" using lt_ord_ax by auto
 lemma lt_ord1: "j<i ==> Ord(j)"
   using lt_ord by simp
 
 lemma lt_ord2: "j<i ==> Ord(i)"
   using lt_ord by simp
 
+lemma ord_succ_iff [iff] : "Ord (succ \<beta>) \<longleftrightarrow> Ord \<beta>" using ord_succ_iff_ax by auto
+lemma limit_iff : "Limit \<mu> \<longleftrightarrow> Ord \<mu> \<and> 0 < \<mu> \<and> (\<forall>\<beta>. \<beta> < \<mu> \<longrightarrow> succ \<beta> < \<mu>)" using limit_def by auto
 lemma succ_ord [intro]:
   assumes "Ord x" shows "Ord (succ x)"
   using assms by (auto)
@@ -74,11 +78,21 @@ lemma predset_iff : assumes "Ord \<beta>"
   shows "\<alpha> \<in> predSet \<beta> \<longleftrightarrow> \<alpha> < \<beta>"
   using predset_def assms by auto
 
+lemma predsetI : 
+  shows "\<alpha> < \<beta> \<Longrightarrow> \<alpha> \<in> predSet \<beta>"
+  using predset_iff lt_ord by auto
+
+lemma predsetE : assumes "Ord \<beta>"
+  shows "\<alpha> \<in> predSet \<beta> \<Longrightarrow> \<alpha> < \<beta>"
+  using predset_iff[OF assms] by simp 
+  
 lemma predset_mem_ord : assumes "Ord \<beta>"
   shows "\<alpha> \<in> predSet \<beta> \<Longrightarrow> Ord \<alpha>"
   using predset_iff[OF \<open>Ord \<beta>\<close>] lt_ord1 by auto
 
 lemma succ_lt : "Ord \<beta> \<Longrightarrow> \<beta> < succ \<beta>" using succ_def by auto
+
+lemma zero_lt : "\<not> (\<alpha> < 0)" by (simp add: zero_def)
 
 definition one :: "'d" (\<open>1\<close>) where
   "1 \<equiv> succ 0"
@@ -99,7 +113,7 @@ lemma trans_induct [consumes 1, case_names step] :
 
 lemmas le_Ord2 = lt_ord2 [THEN succ_ordD]
 (* i<0 ==> R *)
-lemmas lt0E = zero_def [THEN notE, elim!]
+lemmas lt0E = zero_lt [THEN notE, elim!]
 
 lemma lt_trans_pure [trans]: "\<lbrakk> i < j ; j < k \<rbrakk> \<Longrightarrow> i < k" using lt_trans by blast
 
@@ -113,15 +127,7 @@ lemma lt_not_refl: "\<not> i<i"
 
 abbreviation leq (infixl \<open>\<le>\<close> 50) where "x \<le> y \<equiv> x < succ y"
 
-lemma le_iff: "i \<le> j <-> i<j | (i=j & Ord(j))"
-proof 
-  assume "i \<le> j" hence "i < succ j" by simp
-  moreover hence "Ord j" using lt_ord succ_ordD  by auto
-  ultimately show "i < j \<or> (i = j \<and> Ord j)" using succ_def by auto
-next
-  assume "i < j \<or> i = j \<and> Ord j"
-  thus "i \<le> j" using succ_def lt_ord by auto
-qed
+lemma le_iff: "i \<le> j <-> i<j | (i=j & Ord(j))" using succ_def by auto
 
 lemma leI: "i<j ==> i \<le> j"
   by (simp add: le_iff)
@@ -243,14 +249,14 @@ apply blast
 done
 
 lemma limit_ord: "Limit(i) ==> Ord(i)"
-  unfolding limit_def by auto
+  unfolding limit_iff by auto
 (*WAS: 
 apply (unfold Limit_def)
 apply (erule conjunct1)
 done *)  
 
 lemma Limit_has_0: "Limit(i) ==> 0 < i"
-  unfolding limit_def by auto
+  unfolding limit_iff by auto
 (*WAS:
 apply (unfold Limit_def)
 apply (erule conjunct2 [THEN conjunct1])
@@ -260,7 +266,7 @@ lemma Limit_nonzero: "Limit(i) ==> i \<noteq> 0"
 by (drule Limit_has_0, blast)
 
 lemma Limit_has_succ: "[| Limit(i);  j<i |] ==> succ(j) < i"
-by (unfold limit_def, blast)
+by (unfold limit_iff, blast)
 
 lemma Limit_succ_lt_iff [simp]: assumes "Limit(i)" 
   shows  "succ(j) < i <-> (j<i)"
@@ -278,7 +284,7 @@ apply (blast intro: lt_trans)
 done*)
 
 lemma zero_not_Limit [iff]: "~ Limit(0)"
-  using limit_def by auto
+  using limit_iff by auto
 (*WAS: by (simp add: Limit_def)*)
 
 lemma Limit_has_1: "Limit(i) ==> 1 < i"
@@ -287,7 +293,7 @@ lemma Limit_has_1: "Limit(i) ==> 1 < i"
 
 lemma increasing_LimitI: "[| 0<l; \<forall>x. x < l \<longrightarrow> (\<exists>y. y < l \<and> x < y) |] ==> Limit(l)"
 (*WAS: "[| 0<l; \<forall>x\<in>l. \<exists>y\<in>l. x<y |] ==> Limit(l)"*)
-  by (unfold limit_def, simp add: lt_ord2, clarify, blast intro: lt_trans1 lt_ord2)
+  by (unfold limit_iff, simp add: lt_ord2, clarify, blast intro: lt_trans1 lt_ord2)
 (*WAS: apply (unfold Limit_def, simp add: lt_ord2, clarify)
 apply (drule_tac i=y in ltD)
 apply (blast intro: lt_trans1 [OF _ ltI] lt_ord2)
@@ -305,7 +311,7 @@ proof -
     have "~ i \<le> y" using yi by (blast dest: le_imp_not_lt)
     hence "succ(y) < i" using nsucc [of y]
       by (blast intro: Ord_linear_lt [OF Osy Oi]) }
-  thus ?thesis using i Oi by (auto simp add: limit_def)
+  thus ?thesis using i Oi by (auto simp add: limit_iff)
 qed
 
 lemma succ_LimitE [elim!]: "Limit(succ(i)) ==> P"
@@ -344,6 +350,11 @@ lemma trans_induct3 [case_names 0 succ limit, consumes 1]:
     "(\<And>x. Limit(x) \<Longrightarrow> (\<And>y. y < x \<Longrightarrow> P(y)) \<Longrightarrow> P(x))" 
     shows "P(i)"
   using trans_induct3_raw [of i P, OF assms] by simp 
+
+
+lemma \<omega>_lim : "Limit \<omega>" using \<omega>_def by simp
+lemma \<omega>_0 : "0 < \<omega>" using \<omega>_lim limit_def by auto
+lemma \<omega>_succ : "\<beta> < \<omega> \<Longrightarrow> succ \<beta> < \<omega>" using \<omega>_lim limit_def by auto
 
 (*Needs to come before the locale specification of Ops *)
 abbreviation setseq where "setseq X \<equiv> rall (\<lambda>\<beta>. \<beta> < \<omega>) (\<lambda>\<beta>. Set (X \<beta>))"

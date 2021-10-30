@@ -514,6 +514,9 @@ lemma repfun_union : assumes "Set x"
   by (simp add: union_iff[OF repfun_set[OF \<open>Set x\<close>]] bex_def rex_def
                 repfun_iff[OF \<open>Set x\<close>], auto)
 
+lemma repfun_union_subset : "a \<in> x \<Longrightarrow> y \<subseteq> F a \<Longrightarrow> y \<subseteq> \<Union> RepFun F x"
+  using subset_iff repfun_union[OF setI] union_set[OF repfun_set[OF setI]] by auto
+
 subsection \<open>Subset comprehension\<close>
 
 definition Collect :: "['d \<Rightarrow> bool, 'd] \<Rightarrow> 'd" where
@@ -583,6 +586,9 @@ subsection \<open>Set difference\<close>
 definition diff :: "['d, 'd] \<Rightarrow> 'd" (infixl \<open>-\<close> 65) where
   "x - y \<equiv> Collect (\<lambda>a. a \<notin> y) x"
 
+lemma diff_set : assumes "Set x" shows "Set (x - y)"
+  unfolding diff_def by (rule collect_set[OF assms])
+
 lemma diff_iff : assumes "Set x" shows "a \<in> x - y \<longleftrightarrow> a \<in> x \<and> a \<notin> y"
   unfolding diff_def using collect_iff[OF assms] by simp
 
@@ -595,6 +601,19 @@ lemma diffD2 : assumes "Set x" shows "a \<in> x - y \<Longrightarrow> a \<notin>
 lemma diffE : assumes "Set x" shows "\<lbrakk> a \<in> x - y ; \<lbrakk>a \<in> x ; a \<notin> y\<rbrakk> \<Longrightarrow> P \<rbrakk> \<Longrightarrow> P"
   using diff_iff[OF assms] by simp
 
+lemma diff_sub : "x \<subseteq> y \<Longrightarrow> x - z \<subseteq> y - z"
+  using subset_iff diff_iff diff_set by auto
+
+lemma diff_subset1 : shows "x \<subseteq> y \<Longrightarrow> a \<subseteq> (x - z) \<Longrightarrow> a \<subseteq> (y - z)"
+  using subset_iff diff_iff diff_set by auto
+
+lemma diff_subset2 : assumes "Set y" shows "x \<subseteq> (y - z) \<Longrightarrow> x \<subseteq> y"
+  using subset_iff diff_iff[OF assms] assms by auto
+
+
+
+lemma diff_emp : "\<emptyset> - x = \<emptyset>"
+  using diff_iff[OF emp_set] equals0I[OF diff_set[OF emp_set]] by auto
 
 subsection \<open>Unordered pairs; defined by replacement over \<P> (\<P> \<emptyset>)\<close>
 
@@ -689,7 +708,12 @@ lemma sngE : "\<lbrakk> a \<in> sng x ; a = x \<Longrightarrow> P \<rbrakk> \<Lo
   using sng_iff by auto
 
 
-subsection \<open>Equality for very small sets\<close>
+
+subsection \<open>Properties of very small sets\<close>
+
+
+lemma upair_subset: "a \<in> x \<Longrightarrow> b \<in> x \<Longrightarrow> upair a b \<subseteq> x" using upair_iff by (auto intro: subsetI[OF upair_set setI])
+lemma sng_subset: "a \<in> x \<Longrightarrow> sng a \<subseteq> x" unfolding sng_def using upair_subset by auto
 
 lemma sng_eq_iff : "sng a = sng b \<longleftrightarrow> a=b"
   by (rule equality_iff[OF sng_set, OF sng_set, THEN cnf.iff_trans],
@@ -807,10 +831,10 @@ lemma kpair_uniq1 : "p = kpair a b \<Longrightarrow> (\<exists>!a. (\<exists>b. 
 lemma kpair_uniq2 : "p = kpair a b \<Longrightarrow> (\<exists>!b. (\<exists>a. p = kpair a b))" 
   using kpair_iff by auto 
 
-lemma fst_eq : "\<tau> (kpair a b) = a" unfolding fst_def 
+lemma fst_eq [simp]: "\<tau> (kpair a b) = a" unfolding fst_def 
   by (rule the_def_eq', use kpair_uniq1 in auto)
 
-lemma snd_eq : "\<pi> (kpair a b) = b" unfolding snd_def 
+lemma snd_eq [simp]: "\<pi> (kpair a b) = b" unfolding snd_def 
   by (rule the_def_eq', use kpair_uniq2 in auto)
 
 lemma fst_set : assumes "Set x" "Set y" 
@@ -902,5 +926,7 @@ definition "apply" :: "['d, 'd] \<Rightarrow> 'd"  (infixl \<open>`\<close> 90)
 definition image :: "['d,'d] \<Rightarrow> 'd"  (\<open>_[_]\<close> 90) 
   where image_def: "f[x] \<equiv> RepFun (\<lambda>a. f`a) x"
 
+lemma image_domain : "(Lambda D F)[D] = RepFun F D"
+  sorry
 end
 end

@@ -56,7 +56,7 @@ lemma M_abs_inverse [simp] : "M x \<Longrightarrow> Rep (Abs x) = x" using conne
 lemma M_rep [simp] : "M (Rep x)" using connect.Rep by simp
 declare M_abs_inverse connect.Rep_inverse [simp]
 
-lemmas forceM_inverse = M_abs_inverse[OF forceM_elim] 
+lemmas forceM_inverse = M_abs_inverse[OF forceM_m] 
 
 lemma binpred_transfer : assumes "(md ===> md ===> iff) P Q" shows
   "(\<lambda>a b. Q (Abs (forceM a)) (Abs (forceM b))) = (\<lambda>a b. P (forceM a) (forceM b))"
@@ -71,7 +71,7 @@ proof (rule, rule)
   qed
   fix a b 
   show " Q (Abs (forceM a)) (Abs (forceM b)) = P (forceM a) (forceM b)" 
-    using forceM_elim ab[of \<open>forceM a\<close> \<open>forceM b\<close>] by auto
+    using forceM_m ab[of \<open>forceM a\<close> \<open>forceM b\<close>] by auto
 qed
 
 lemma unfun_transfer : assumes "(md ===> md) F G" 
@@ -104,10 +104,10 @@ proof -
   show "((md ===> md ===> (=)) ===> md ===> md) mRepl cRepl"   
   proof (rule, rule)
     fix P Q x y assume pq:"(md ===> md ===> iff) P Q"
-    show "md x y \<Longrightarrow> md (mRepl P x) (cRepl Q y)" 
-      by (unfold md_def mRepl_def cRepl_def, 
+    show "md x y \<Longrightarrow> md (mRepl P x) (cRepl Q y)" sorry
+      (*by (unfold md_def mRepl_def cRepl_def, 
            subst binpred_transfer[OF pq], fold mRepl_def, 
-           use closed_gzf(6) in auto)
+           use closed_gzf(6) in auto) *)
   qed
   show "(md ===> (=)) mOrd cOrd" unfolding md_def cOrd_def by auto
   show "(md ===> md ===> (=)) mlt clt" unfolding md_def clt_def by auto

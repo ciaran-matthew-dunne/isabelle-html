@@ -80,31 +80,23 @@ def fact_link(name, thy, path):
   elem.text = name
   return elem
 
-def fact_obj(name):
+def text_elem(name):
   elem = etree.Element('html:a')
   elem.set('class','unlinked-fact')
   elem.text = name
   return elem
 
-def add_spaces(xs):
-  intersperse = (lambda xs, e: [e] + [b for ys in [[a,e] for a in xs] for b in ys])
-  blank = etree.Element('html:a')
-  blank.text = ' '
-  return intersperse(xs, blank)
-
 def fact_split(str):
   if str == '': 
     return []
+  i = 1
+  hd = str[0]  
   if str[0] in ['\n', ' ']:
-    i = 1
-    hd = str[0]  
     while str[i:] and str[i] in ['\n', ' ']:
       hd += str[i]
       i += 1
     return [hd] + fact_split(str[i:]) 
   else:
-    i = 1
-    hd = str[0]  
     while str[i:] and str[i] not in ['\n', ' ']:
       hd += str[i]
       i += 1
@@ -113,18 +105,25 @@ def fact_split(str):
 def add_elem_links(elem, fact_bank, thy, path):
   items = fact_split(elem.tail)
   elem.tail = ''
-  elem.extend([fact_link(name, thy, path)\
-      if name in fact_bank else fact_obj(name)\
-      for name in facts])
+  elem.extend([fact_link(txt, thy, path)\
+      if txt in fact_bank else text_elem(txt)\
+      for txt in items])
 
-# def get_thm_ranges(spans):
-#   using_inds = decl_inds(spans, "from")\
-#              + decl_inds(spans, "with")\
-#              + decl_inds(spans, "using")\
-#              + decl_inds(spans, "unfolding")
-#   for n in using_inds:
-#     m = n
-#     while spans[m].attrib != 'keyword1':
+def insert_keyword_thm_links(spans, fact_bank, thy, path):
+  keyword_inds = decl_inds(spans, "from")\
+             + decl_inds(spans, "with")\
+             + decl_inds(spans, "using")\
+             + decl_inds(spans, "unfolding")
+  for n in keyword_inds:
+    m = n
+    print("n=" + str(n))
+    while (spans[m:]) and (m == n or spans[m].get("class") not in ['keyword1', 'keyword3']):
+      tl = spans[m].tail
+      if tl and tl.strip() != '':
+        add_elem_links(spans[m], fact_bank, thy, path)
+      m += 1  
+    print("m="+ str(m))  
+
 
 # After which keywords can facts be mentioned?
 # - using, from, with, unfolding
@@ -132,40 +131,9 @@ def add_elem_links(elem, fact_bank, thy, path):
 # - simp add:|only:, auto|blast intro:|elim:, 
 # - unfold, rule, induct, subst, insert, cases, OF, THEN
 
-
-def insert_links(spans, fact_bank, thy, path):
-  # Insert links to declarations, avoiding binding occurrences
-  # If 'name_def' is the tail of a span such that span.text=='where',
-  # then it is a binding occurrence  s
-  using_inds = decl_inds(spans, "from")\
-             + decl_inds(spans, "with")\
-             + decl_inds(spans, "using")\
-             + decl_inds(spans, "unfolding")
-  for n in using_inds:
-    elem = spans[n]
-    if elem.tail not in [None, '']:
-      if has_OF(n):
-        facts = gather_facts(spans,n)
-      else:   
-        facts = elem.tail.split()
-        elem.tail = ''
-        fact_elems = add_spaces([fact_link(name, thy, path)\
-                               if name in fact_bank else fact_obj(name)\
-                               for name in facts])
-        elem.extend(fact_elems)
-  rule_inds = decl_inds(spans, "rule")
-  # for elem in [spans[n] for n in rule_inds]:
-  # if elem.tail not in [None, '']:
-  #   facts = elem.tail.split()
-  #   elem.tail = ''
-  #   fact_elems = add_spaces([fact_link(name, thy, path)\
-  #                          if name in fact_bank else fact_obj(name)\
-  #                          for name in facts])
-
-
 def link_html():
   facts = get_thm_names(spans, "Model_locale") + get_def_names(spans, "Model_locale")
-  insert_links(spans, facts, "Model_locale", gzf_path)
+  insert_keyword_thm_links(spans, facts, "Model_locale", gzf_path)
   f = open("../out/test/Model.xml",'wb')
   gzf_tree.write(f, method='html')
   f.close()

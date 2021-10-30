@@ -4,13 +4,37 @@
 # ∙ Add support for definition names in quotes
 
 import xml.etree.ElementTree as etree
-from itertools import chain, izip, repeat, islice
 
 ### Preparing stuff
-gzf_path = "../out/Unsorted/GZF-HOL/GZF_locale.html"
+gzf_path = "../out/html/Unsorted/GZF-HOL/Model_locale.html"
 gzf_tree = etree.parse(gzf_path)
 gzf_root = gzf_tree.getroot()
 spans = gzf_root[1][1]
+
+
+tmapI = [(spans[n],n) for n in range(180,186)]
+disjI = [(spans[n],n) for n in range(344,359)]
+tier_set = [(spans[n],n) for n in range(897,920)]
+
+def printe(elem):
+  if elem.text:
+    print("tx:" + elem.text)
+  if elem.tail:
+    print("tl:" + elem.tail)
+  if elem.attrib:
+    print("att:" + str(elem.attrib))  
+
+def printsp(n,m):
+  for i in range(n,m):
+    if spans[i].text or spans[i].tail:
+      print("#" + str(i))
+      printe(spans[i])
+
+def printspl(l):
+  for (elem,n) in l:
+    if elem.text or elem.tail:
+      print("#" + str(n))
+      printe(elem)             
 
 ### Parsing names of declarations
 def is_decl(elem, decl_name):
@@ -28,7 +52,7 @@ def get_def_names(spans, thy):
   for n in def_inds:
     elem = spans[n+1]
     name = elem.text
-    if name !="\"":
+    if name not in [None, "\""]:
       def_names.append(name + "_def")
       elem.set('id', thy + '.' + name + "_def")
   return def_names
@@ -58,38 +82,91 @@ def fact_link(name, thy, path):
 
 def fact_obj(name):
   elem = etree.Element('html:a')
+  elem.set('class','unlinked-fact')
   elem.text = name
   return elem
+
+def add_spaces(xs):
+  intersperse = (lambda xs, e: [e] + [b for ys in [[a,e] for a in xs] for b in ys])
+  blank = etree.Element('html:a')
+  blank.text = ' '
+  return intersperse(xs, blank)
+
+def fact_split(str):
+  if str == '': 
+    return []
+  if str[0] in ['\n', ' ']:
+    i = 1
+    hd = str[0]  
+    while str[i:] and str[i] in ['\n', ' ']:
+      hd += str[i]
+      i += 1
+    return [hd] + fact_split(str[i:]) 
+  else:
+    i = 1
+    hd = str[0]  
+    while str[i:] and str[i] not in ['\n', ' ']:
+      hd += str[i]
+      i += 1
+    return [hd] + fact_split(str[i:]) 
+
+def add_elem_links(elem, fact_bank, thy, path):
+  items = fact_split(elem.tail)
+  elem.tail = ''
+  elem.extend([fact_link(name, thy, path)\
+      if name in fact_bank else fact_obj(name)\
+      for name in facts])
+
+# def get_thm_ranges(spans):
+#   using_inds = decl_inds(spans, "from")\
+#              + decl_inds(spans, "with")\
+#              + decl_inds(spans, "using")\
+#              + decl_inds(spans, "unfolding")
+#   for n in using_inds:
+#     m = n
+#     while spans[m].attrib != 'keyword1':
+
 # After which keywords can facts be mentioned?
 # - using, from, with, unfolding
 # - note, thm
 # - simp add:|only:, auto|blast intro:|elim:, 
 # - unfold, rule, induct, subst, insert, cases, OF, THEN
-def pad_list(seq):
-    blank_elem = etree.Element('a')
-    blank_elem.text = ' '
-    return [blank_elem] +\
-      list(islice(chain.from_iterable(izip(repeat(blank_elem), seq)), 1, None))\
-      + [blank_elem]
+
 
 def insert_links(spans, fact_bank, thy, path):
   # Insert links to declarations, avoiding binding occurrences
   # If 'name_def' is the tail of a span such that span.text=='where',
-  # then it is a binding occurrence  
-  using_inds = decl_inds(spans, "using")
+  # then it is a binding occurrence  s
+  using_inds = decl_inds(spans, "from")\
+             + decl_inds(spans, "with")\
+             + decl_inds(spans, "using")\
+             + decl_inds(spans, "unfolding")
   for n in using_inds:
     elem = spans[n]
-    facts = elem.tail.split()
-    elem.tail = ''
-    fact_elems = pad_list([fact_link(name, thy, path)\
-                           if name in fact_bank else fact_obj(name)\
-                           for name in facts])
-    elem.extend(fact_elems)
+    if elem.tail not in [None, '']:
+      if has_OF(n):
+        facts = gather_facts(spans,n)
+      else:   
+        facts = elem.tail.split()
+        elem.tail = ''
+        fact_elems = add_spaces([fact_link(name, thy, path)\
+                               if name in fact_bank else fact_obj(name)\
+                               for name in facts])
+        elem.extend(fact_elems)
+  rule_inds = decl_inds(spans, "rule")
+  # for elem in [spans[n] for n in rule_inds]:
+  # if elem.tail not in [None, '']:
+  #   facts = elem.tail.split()
+  #   elem.tail = ''
+  #   fact_elems = add_spaces([fact_link(name, thy, path)\
+  #                          if name in fact_bank else fact_obj(name)\
+  #                          for name in facts])
+
 
 def link_html():
-  facts = get_thm_names(spans, "GZF_locale") + get_def_names(spans, "GZF_locale")
-  insert_links(spans, facts, "GZF_locale", gzf_path)
-  f = open("../out/test/tes2t.xml",'w')
+  facts = get_thm_names(spans, "Model_locale") + get_def_names(spans, "Model_locale")
+  insert_links(spans, facts, "Model_locale", gzf_path)
+  f = open("../out/test/Model.xml",'wb')
   gzf_tree.write(f, method='html')
   f.close()
 # When elem.text == lemma, let lem_name := elem.tail

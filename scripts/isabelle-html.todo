@@ -1,0 +1,5 @@
+todo:
+ ✔ BUG: keyword facts on newline don't get linked! @done (21-11-01 11:42)
+ ✔ make links actually work @done (21-11-01 12:13)
+ ☐ fact bank of entire session rather than just one file
+ ☐ link constant occurences in object syntax
